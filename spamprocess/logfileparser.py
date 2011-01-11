@@ -66,8 +66,8 @@ def parse_logfile(logfile_path):
         raise TypeError(LOGFILE_PATH_ERROR)
 
     # This RE separates the header from the rest of the string
-    re_expr_header = re.compile(r'^((\d\d\d\d)\-(\d\d)\-(\d\d)\s?(\d\d):(\d\d)\
-                                \:(\d\d)\s?\+\d\d\d\d\:\s.+\[\d+\]\:)(.*)')
+    re_expr_header = re.compile('^((\d+)\-(\d+)\-(\d+)\s+(\d\d)\:(\d\d)\:(\d\
+\d)\s+\+\d\d\d\d\:\s+[^\:]+\:)(.*)')
     # This RE gets (iteratively) every basic log attribute from the string
     re_expr_attr = re.compile(r'\s([^\:]*)\: ([^\,]*),?')
     # This RE separates the "rcpts" attribute from the others
@@ -77,6 +77,7 @@ def parse_logfile(logfile_path):
 
     for line in open(logfile_path, 'r'):
         match = re_expr_header.match(line)
+        #print 'linha: ','"'+line+'"'
         if match:
             # Attributes dictionary
             attributes = dict()
