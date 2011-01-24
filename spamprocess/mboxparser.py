@@ -2,8 +2,9 @@
 # vim:fileencoding=utf-8
 
 import os
-import email
 import datetime
+
+from email.feedparser import FeedParser
 
 # "mailstore" dir can be any directory used as a base path to contain mboxes in
 # it or in subdirectories.
@@ -227,7 +228,7 @@ def parse_mbox(mbox_path, open_function = open):
     last_line_blank = True
     first_line = True
     # MailParser can feed from the read lines and reconstruct the message
-    MailParser = email.feedparser.FeedParser()
+    MailParser = FeedParser()
     for line in mbox_file:
         # If its the beginning of the file or last line was left blank
         # and the line begins with "From " then this is a
@@ -241,7 +242,7 @@ def parse_mbox(mbox_path, open_function = open):
                 # collector)
                 del(MailParser)
                 # Create a new MessageParser
-                MailParser = email.feedparser.FeedParser()
+                MailParser = FeedParser()
             else:
                 first_line = False
         else:
