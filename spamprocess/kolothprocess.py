@@ -11,13 +11,13 @@ def koloth_process(process_date, quarters_path, fail_object=None):
     """
     koloth_process(datetime.date, string) -> tuples (generator)
     Receives a date as argument and processes the mailboxes produced in such date.
-    Returns a file with the elements yielded from the process.    
+    Returns a file with the elements yielded from the process.
     """
 
     # Grants the date received to be iso formatted
     if not isinstance(process_date, date):
         raise TypeError, 'The argument "search_date" must be date typed;'
-    
+
     # Search for mailboxes produced in the received date
     mbox_paths = mbox_lister(process_date, quarters_path)
 
@@ -27,79 +27,96 @@ def koloth_process(process_date, quarters_path, fail_object=None):
 
     # Processes each mailbox from the set of mailbox paths
     for mailbox_path in mbox_paths:
-        
+
         # Verifies if the mailbox exists and if it is compressed
         returned_path = path_info(mailbox_path)
-       
+
         if returned_path is None:
-            yield ((mailbox_path, 2))
+            # to-do: yield ((mailbox_path, 2))
             continue
-        
+
         if mailbox_path["compressed"]:
             mailbox_pack = parse_mbox(mailbox_path.path, gzip.open)
         else:
             mailbox_pack = parse_mbox(mailbox_path.path)
 
         for msg in mailbox_pack:
-            feature_list = message_features(msg.keys(), msg.values(), STANDARD_FEATURES, SEPARATOR)
-            feature_store(feature_list)
+            feature_list = message_entries(msg.items(), STANDARD_ATTRIBUTES, STANDARD_FEATURES, EMPTY_FIELD, SEPARATOR)
+
+    return
 
 
 
-
-
-
-def message_features(message_keys, message_values, standard_features, empty_field="NULL"):
+def message_entries(message_items, standard_attributes, standard_features, empty_field="NULL", separator="\t"):
     """
-    message_features(email.Message.keys(), email.Message.values(), list(string), [string]) -> list(string)
+    message_entries(email.Message.items(), list(string), list(string), [string], [string]) -> string
 
-        Walk through the 'standard_features', looking for every entry of this list in the 'message_keys' list.
-        For every entry found, gets its position in the 'message_keys', which is the exact position of the
-    determined key value in the 'message_values' list.
-        Once the position has been retrieved, appends to a list named 'feature_list', the value in
-    message_values[position].
-        If there's no such 'feature_key' in the 'message_keys' list, appends to the 'feature_list' the
-    'empty_field' value -- by default, set as "NULL".
-        Returns the 'feature_list', yielded by the procedure.
-    """
+        Walk through the 'standard_attributes' and 'standard_features' lists, looking for a match for
+    every entry of them in the 'message_items' list.
+        For every entry found, gets its position, and places its respective value in the vector 'message_values',
+    on the exact position it was found in its original vector, except for the second vector items, that gets
+    its values instilled in the vector 'message_values' on their former position, plus the size of the first
+    vector checked -- standard_attributes.
+        Once the vector has been compounded, it'll be filled with the values retrieved, and it may have some
+    couple of entries corresponding to the value of the 'empty_field' argument -- due to the very creation of
+    the vector, and to the fact that some values may not be found.
+        Then, a string is written with the values recovered, but with some considerable specifications:
 
-    feature_list = list()
+            - this part represents the attribute values
+            - the string starts with the number of subsequent attribute values till another number come up
+            - the value is separated from the first attribute value by a 'separator'
+            - the attribute values are separated by a 'separator'
+            pattern described:
+                num_attribute_values, separator, attribute_value_1, separator, attribute_value_n, separator
+                3\tattribute_value_1\tattribute_value_2\tattribute_value_3\t
 
-    for feature_key in standard_features:
-        if message_keys.__contains__(feature_key):
-            position = message_keys.index(feature_key)
-            feature_list.append(message_values[position])
-        else:
-            feature_list.append(empty_field)
+            - the following part is regarded to the feature values
+            - after the last 'separator' on the former part, -- which, in fact, is the last content of
+            former part --, comes a number representing the quantity of subsequent feature values
+            - the value is separated from the first feature value by a 'separator'
+            - the feature values are separated by a 'separator'
+            - the string ends when the 'num_feature_values' separator gets read
+            pattern described:
+                num_feature_values, separator, feature_value_1, separator, feature_value_n, separator
+                3\tfeature_value_1\tfeature_value_2\tfeature_value_3\t
 
-    return feature_list
+            - the entire string is about to look like:
+                2\tattribute_value_1\tattribute_value_2\t2\tfeature_value_1\tfeature_value_2\t
 
-
-
-
-def feature_store(standard_features=None, feature_list=None, separator="\t", file_path="feature_store"):
-    """
-    feature_store([list(string)], [list(stuff)], [string], [string]) -> 
-
-        Receives a list of features to be written on a determined file given by the 'file_path' argument.
-        'file_path' equals 'feature_store' once no special path has been defined,
-    
-    Opens up a file or creates one, in order to write down the "feature"list receiveInserts the matching attributes and their determined values in the attribute_store argument,
-    i.e., writes these parameters and values in a file according to the following pattern:
-    attribute:value
+        The string written is printed to the system.
     """
 
-    
-    
+    attributes_size = len(standard_attributes)
+    features_size = len(standard_features)
+    message_values = [empty_field] * (attributes_size + features_size)
+
+    for entry in message_items:
+
+        # Here, the position starts from 0
+        if standard_attributes.__contains__(message_items[entry][0]):
+            position = standard_attributes.index(message_items[entry][0])
+            message_values[position] = message_items[entry][1]
+
+        # The position, in this part, starts from the size of the former array -- standard_attributes
+        if standard_features.__contains__(message_items[entry][0]):
+            position = attributes_size + standard_features.index(message_items[entry][0])
+            message_values[position] = message_items[entry][1]
 
 
+    # Creating the message_string
+    message_string = ""
 
+    message_string += str(attributes_size)
+    message_string += separator
 
+    for entry in message_values[:attributes_size]:
+        message_string += (str(entry)+separator)
 
+    message_string += str(features_size)
+    message_string += separator
 
+    for entry in message_values[attributes_size:]:
+        message_string += (str(entry)+separator)
 
-
-
-
-
+    print message_string
 
