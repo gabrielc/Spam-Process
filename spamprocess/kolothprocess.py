@@ -35,21 +35,21 @@ def koloth_process(process_date, quarters_path, fail_object=None):
             # to-do: yield ((mailbox_path, 2))
             continue
 
-        if mailbox_path["compressed"]:
-            mailbox_pack = parse_mbox(mailbox_path.path, gzip.open)
+        if returned_path["compressed"]:
+            mailbox_pack = parse_mbox(returned_path["path"], gzip.open)
         else:
-            mailbox_pack = parse_mbox(mailbox_path.path)
+            mailbox_pack = parse_mbox(returned_path["path"])
 
         for msg in mailbox_pack:
-            feature_list = message_entries(msg.items(), STANDARD_ATTRIBUTES, STANDARD_FEATURES, EMPTY_FIELD, SEPARATOR)
+            feature_list = message_entries(msg.items(), returned_path["path"], STANDARD_ATTRIBUTES, STANDARD_FEATURES, EMPTY_FIELD, SEPARATOR)
 
     return
 
 
 
-def message_entries(message_items, standard_attributes, standard_features, empty_field="NULL", separator="\t"):
+def message_entries(message_items, mailbox_path, standard_attributes, standard_features, empty_field="NULL", separator="\t"):
     """
-    message_entries(email.Message.items(), list(string), list(string), [string], [string]) -> string
+    message_entries(email.Message.items(), string, list(string), list(string), [string], [string]) -> string
 
         Walk through the 'standard_attributes' and 'standard_features' lists, looking for a match for
     every entry of them in the 'message_items' list.
@@ -62,8 +62,14 @@ def message_entries(message_items, standard_attributes, standard_features, empty
     the vector, and to the fact that some values may not be found.
         Then, a string is written with the values recovered, but with some considerable specifications:
 
+            - the string to be returned starts with the path of the mailbox from which the determined
+            message has been taken, followed by a 'separator'
+            pattern described:
+                mailbox_path, separator
+                mailbox_path_itself\t
+
             - this part represents the attribute values
-            - the string starts with the number of subsequent attribute values till another number come up
+            - the string continues with the number of subsequent attribute values till another number come up
             - the value is separated from the first attribute value by a 'separator'
             - the attribute values are separated by a 'separator'
             pattern described:
@@ -81,7 +87,7 @@ def message_entries(message_items, standard_attributes, standard_features, empty
                 3\tfeature_value_1\tfeature_value_2\tfeature_value_3\t
 
             - the entire string is about to look like:
-                2\tattribute_value_1\tattribute_value_2\t2\tfeature_value_1\tfeature_value_2\t
+                mailbox_path_itself\t2\tattribute_value_1\tattribute_value_2\t2\tfeature_value_1\tfeature_value_2\t
 
         The string written is printed to the system.
     """
@@ -106,7 +112,10 @@ def message_entries(message_items, standard_attributes, standard_features, empty
     # Creating the message_string
     message_string = ""
 
-    message_string += str(attributes_size)
+    message_string += mailbox_path
+    message_string += separator
+
+    message_string += str(attributes_size+1)
     message_string += separator
 
     for entry in message_values[:attributes_size]:
